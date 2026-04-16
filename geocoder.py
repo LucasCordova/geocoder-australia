@@ -6,7 +6,7 @@ from typing import Optional, Tuple
 
 import googlemaps
 
-GOOGLE_MAPS_API_KEY = "AIzaSyA8HVGRG5_GYkxTr3kntNDIE_l1k6BGqfk"
+GOOGLE_MAPS_API_KEY = ""
 
 
 def _parse_lat_lng(coordinates: str) -> Tuple[float, float]:
