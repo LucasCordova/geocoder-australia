@@ -6,24 +6,30 @@ from pathlib import Path
 from geocoder import reverse_geocode
 
 
-INPUT_PATH = Path("input_data.csv")
+INPUT_PATH = Path("trees-with-species-and-dimensions-urban-forest.csv")
 OUTPUT_PATH = Path("output_data.csv")
+FIELDNAMES = ["geolocation", "suburb", "postal_code"]
 
 
 def main() -> None:
     if not INPUT_PATH.exists():
         raise FileNotFoundError(f"Missing {INPUT_PATH.resolve()}")
 
-    rows_out: list[dict[str, str]] = []
+    with (
+        INPUT_PATH.open("r", newline="", encoding="utf-8") as fin,
+        OUTPUT_PATH.open("w", newline="", encoding="utf-8") as fout,
+    ):
+        reader = csv.DictReader(fin)
+        if not reader.fieldnames or "geolocation" not in reader.fieldnames:
+            raise ValueError('input_data.csv must contain a "geolocation" column')
 
-    with INPUT_PATH.open("r", newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        if not reader.fieldnames or "coordinates" not in reader.fieldnames:
-            raise ValueError('input_data.csv must contain a "coordinates" column')
+        writer = csv.DictWriter(fout, fieldnames=FIELDNAMES)
+        writer.writeheader()
+        fout.flush()
 
         for i, row in enumerate(reader, start=2):  # header is line 1
-            coords = (row.get("coordinates") or "").strip()
-            extras = row.get(None)  # when a row has more fields than the header
+            coords = (row.get("geolocation") or "").strip()
+            extras = row.get(None)
             if extras:
                 coords = ",".join([coords, *[str(x).strip() for x in extras if str(x).strip()]])
             if not coords:
@@ -34,20 +40,15 @@ def main() -> None:
             except Exception as e:
                 raise RuntimeError(f"Reverse geocode failed on line {i} ({coords!r}): {e}") from e
 
-            rows_out.append(
+            writer.writerow(
                 {
-                    "coordinates": coords,
+                    "geolocation": coords,
                     "suburb": suburb,
                     "postal_code": postal_code,
                 }
             )
-
-    with OUTPUT_PATH.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["coordinates", "suburb", "postal_code"])
-        writer.writeheader()
-        writer.writerows(rows_out)
+            fout.flush()
 
 
 if __name__ == "__main__":
     main()
-
